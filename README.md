@@ -66,6 +66,8 @@ See [reverse/README.md](reverse/README.md) for full integration details.
 
 ## 🧬 Multi-View 3D Generation & LoRA Fine-Tuning Pipeline (`notebooks/`)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/visaodeempresa/LeticIA-Assistant-3D/blob/main/notebooks/avatar_leticia_3d_generation.ipynb)
+
 The Jupyter Notebook [`notebooks/avatar_leticia_3d_generation.ipynb`](notebooks/avatar_leticia_3d_generation.ipynb) implements a complete 4-stage 3D reconstruction and identity adaptation pipeline from the reference images in `images/`:
 
 1. **Photometric Audit & Alpha Segmentation (`briaai/RMBG-2.0`)**: Image integrity verification, EXIF orientation normalization, Laplacian variance sharpness scoring, and centered RGBA subject cropping ($1024 \times 1024$ at $85\%$ foreground occupancy).
