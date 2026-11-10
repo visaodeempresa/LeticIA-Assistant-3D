@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stylized Vintage Cyber Young Girl — Hi3D Three.js Local Viewer</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-base: #0d0e11;
+      --bg-panel: rgba(20, 22, 27, 0.88);
+      --bg-panel-solid: #14161b;
+      --bg-control: rgba(255, 255, 255, 0.06);
+      --bg-control-hover: rgba(255, 255, 255, 0.12);
+      --bg-active: #7c5cff;
+      --border-subtle: rgba(255, 255, 255, 0.1);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #8b5cf6;
+      --accent-glow: rgba(139, 92, 246, 0.35);
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      user-select: none;
+    }
+
+    .app-layout {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* 3D Viewer Stage */
+    .viewer-stage {
+      flex: 1;
+      position: relative;
+      height: 100%;
+      background: radial-gradient(circle at 50% 42%, #1d202a 0%, #0d0e12 72%);
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+
+    /* Top Bar (Material / Shader Modes) */
+    .top-toolbar {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      z-index: 20;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 13px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.16s ease;
+    }
+
+    .mode-btn:hover {
+      background: var(--bg-control-hover);
+      color: var(--text-primary);
+    }
+
+    .mode-btn.active {
+      background: var(--bg-active);
+      color: #fff;
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 22px;
+      background: var(--border-subtle);
+      margin: 0 2px;
+    }
+
+    /* Version Badge Top-Left */
+    .top-left-badge {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      z-index: 20;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Floating Environment & PBR Controls Panel (Left) */
+    .env-panel {
+      position: absolute;
+      top: 76px;
+      left: 18px;
+      width: 280px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
+      z-index: 20;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .env-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+    }
+
+    .env-section + .env-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .env-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .env-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 9px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+
+    .env-row label {
+      min-width: 72px;
+    }
+
+    .env-row select,
+    .env-row input[type="range"] {
+      flex: 1;
+    }
+
+    .env-select {
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 7px;
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    .val-pill {
+      font-variant-numeric: tabular-nums;
+      font-size: 11px;
+      color: var(--text-primary);
+      min-width: 34px;
+      text-align: right;
+    }
+
+    /* Bottom Dock */
+    .bottom-bar {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .ref-thumb-btn {
+      pointer-events: auto;
+      position: relative;
+      width: 68px;
+      height: 68px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--border-subtle);
+      background: #1a1d24;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .ref-thumb-btn:hover {
+      transform: scale(1.05);
+      border-color: var(--accent);
+    }
+
+    .ref-thumb-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ref-thumb-label {
+      position: absolute;
+      bottom: 0;
+      inset-inline: 0;
+      background: rgba(0, 0, 0, 0.72);
+      font-size: 9.5px;
+      text-align: center;
+      padding: 2px 0;
+      color: #e5e7eb;
+    }
+
+    .bottom-controls {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 11px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-control-hover);
+      color: var(--text-primary);
+    }
+
+    .icon-btn.active {
+      background: rgba(139, 92, 246, 0.22);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.45);
+    }
+
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .zoom-group input[type="range"] {
+      width: 80px;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(13, 14, 17, 0.86);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 30;
+      transition: opacity 0.35s ease;
+    }
+
+    .loading-overlay.done {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-top-color: var(--accent);
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar-track {
+      width: 240px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c5cff, #38bdf8);
+      transition: width 0.15s ease;
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Right Sidebar (Model Info & Reusability) */
+    .info-sidebar {
+      width: 370px;
+      height: 100%;
+      background: var(--bg-panel-solid);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 25;
+      transition: margin-right 0.25s ease;
+    }
+
+    .info-sidebar.collapsed {
+      margin-right: -370px;
+    }
+
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .author-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .author-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c5cff, #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .author-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .model-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .model-desc {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--bg-control);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-heading {
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .spec-card {
+      background: var(--bg-control);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .spec-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .spec-value {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .download-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dl-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-decoration: none;
+      padding: 10px 13px;
+      border-radius: 10px;
+      background: var(--bg-control);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .dl-btn:hover {
+      background: var(--bg-control-hover);
+      border-color: var(--accent);
+    }
+
+    .dl-btn.primary {
+      background: rgba(124, 92, 255, 0.18);
+      border-color: rgba(124, 92, 255, 0.45);
+    }
+
+    .dl-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .code-box {
+      background: #090a0d;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: #d1d5db;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Reference Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-panel-solid);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      max-width: 900px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      padding: 20px;
+    }
+
+    .modal-item {
+      background: #0d0e11;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .modal-item img,
+    .modal-item video {
+      width: 100%;
+      height: 260px;
+      object-fit: contain;
+      background: #090a0c;
+    }
+
+    .modal-caption {
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Main 3D Stage -->
+    <main class="viewer-stage">
+      <!-- Top-Left Badge -->
+      <div class="top-left-badge">
+        <span class="badge-dot"></span>
+        <span>Hi3D v2.1 • Three.js r178 Local Engine</span>
+      </div>
+
+      <!-- Top-Center Render Mode Toolbar -->
+      <div class="top-toolbar" role="toolbar" aria-label="Render Modes">
+        <button class="mode-btn active" data-mode="texture" title="PBR Result with HDRI and Hi3D Shader">
+          <span>🎨 PBR Texture</span>
+        </button>
+        <button class="mode-btn" data-mode="white" title="Clay / White Diffuse with Blinn-Phong Specular">
+          <span>🗿 Clay Model</span>
+        </button>
+        <button class="mode-btn" data-mode="albedo" title="Albedo (Unlit)">
+          <span>☀️ Albedo</span>
+        </button>
+        <button class="mode-btn" data-mode="normal" title="Normal Map">
+          <span>🌈 Normal</span>
+        </button>
+        <div class="toolbar-divider"></div>
+        <button class="mode-btn" id="btn-wireframe" title="Overlay Barycentric Wireframe Mesh">
+          <span>🕸️ Wireframe</span>
+        </button>
+        <button class="mode-btn active" id="btn-env-panel" title="HDRI Lighting & PBR Material Settings">
+          <span>⚙️ HDRI / PBR</span>
+        </button>
+      </div>
+
+      <!-- Floating Environment & PBR Controls Panel -->
+      <aside class="env-panel" id="env-panel">
+        <div class="env-section">
+          <div class="env-title">
+            <span>Environment Lighting (HDRI)</span>
+          </div>
+          <div class="env-row">
+            <label for="select-hdri">Preset</label>
+            <select id="select-hdri" class="env-select">
+              <option value="outdoor1">Outdoor 1 (map2.hdr)</option>
+              <option value="outdoor2">Outdoor 2 (map3.hdr)</option>
+              <option value="indoor1">Indoor 1 (map.hdr)</option>
+              <option value="indoor2" selected>Indoor 2 — Hi3D Default</option>
+              <option value="studio">Studio (room_env.exr)</option>
+            </select>
+          </div>
+          <div class="env-row">
+            <label for="slider-env-int">Intensity</label>
+            <input type="range" id="slider-env-int" min="0" max="5" step="0.05" value="3" />
+            <span class="val-pill" id="val-env-int">3.00</span>
+          </div>
+          <div class="env-row">
+            <label for="slider-env-rot">Rotation Y</label>
+            <input type="range" id="slider-env-rot" min="-180" max="180" step="1" value="-60" />
+            <span class="val-pill" id="val-env-rot">-60°</span>
+          </div>
+        </div>
+
+        <div class="env-section">
+          <div class="env-title">
+            <span>PBR Material Tuning</span>
+          </div>
+          <div class="env-row">
+            <label for="slider-rough-str">Roughness</label>
+            <input type="range" id="slider-rough-str" min="0" max="2" step="0.01" value="1" />
+            <span class="val-pill" id="val-rough-str">1.00</span>
+          </div>
+          <div class="env-row">
+            <label for="slider-rough-con">Rough. Contrast</label>
+            <input type="range" id="slider-rough-con" min="0" max="2" step="0.01" value="1" />
+            <span class="val-pill" id="val-rough-con">1.00</span>
+          </div>
+          <div class="env-row">
+            <label for="slider-metal-str">Metalness</label>
+            <input type="range" id="slider-metal-str" min="0" max="2" step="0.01" value="1" />
+            <span class="val-pill" id="val-metal-str">1.00</span>
+          </div>
+          <div class="env-row">
+            <label for="slider-metal-con">Metal. Contrast</label>
+            <input type="range" id="slider-metal-con" min="0" max="2" step="0.01" value="1" />
+            <span class="val-pill" id="val-metal-con">1.00</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Three.js Canvas Mount -->
+      <div id="canvas-container"></div>
+
+      <!-- Loading Progress Overlay -->
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="loading-text" id="loading-label">Initializing Three.js scene and HDRI...</div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <button class="ref-thumb-btn" id="btn-open-modal" title="View 2D Reference Image & Orbit Video">
+          <img src="./assets/media/reference-source.png" alt="Reference Image" />
+          <span class="ref-thumb-label">Reference</span>
+        </button>
+
+        <div class="bottom-controls">
+          <button class="icon-btn active" id="btn-grid" title="Show/Hide Floor Grid">
+            <span># Grid</span>
+          </button>
+          <button class="icon-btn active" id="btn-axes" title="Show/Hide 3D X/Y/Z Axes Gizmo">
+            <span>🧭 Axes</span>
+          </button>
+          <button class="icon-btn active" id="btn-persp" title="Toggle Perspective / Orthographic Camera">
+            <span id="label-persp">🎥 Perspective</span>
+          </button>
+          <button class="icon-btn active" id="btn-autorotate" title="Auto-Rotation (Pauses on hover)">
+            <span>🔄 Auto-Rotate</span>
+          </button>
+          <button class="icon-btn active" id="btn-gtao" title="GTAO Post-Processing (Ambient Occlusion)">
+            <span>✨ GTAO</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <div class="zoom-group">
+            <span>Zoom</span>
+            <input type="range" id="slider-zoom" min="0" max="100" step="1" value="86" />
+            <span class="val-pill" id="val-zoom">86%</span>
+          </div>
+          <div class="toolbar-divider"></div>
+          <button class="icon-btn" id="btn-particles" title="Trigger Surface Particle Burst">
+            <span>🎆 Particles</span>
+          </button>
+          <button class="icon-btn" id="btn-reset" title="Reset Camera">
+            <span>🎯 Reset</span>
+          </button>
+          <button class="icon-btn" id="btn-screenshot" title="Capture Transparent PNG">
+            <span>📸 Capture</span>
+          </button>
+          <button class="icon-btn active" id="btn-toggle-sidebar" title="Show/Hide Information Sidebar">
+            <span>📋 Info</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right Info & Developer Sidebar -->
+    <aside class="info-sidebar" id="info-sidebar">
+      <div class="sidebar-header">
+        <div class="author-row">
+          <div class="author-avatar">MW</div>
+          <div>
+            <div class="author-name">Maycon Willian</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Hi3D Shared History Model</div>
+          </div>
+        </div>
+        <h1 class="model-title">Stylized Vintage Cyber Young Girl 3D Character</h1>
+        <p class="model-desc">
+          Detailed 3D young fantasy girl with cyber-embroidered coat, realistic textures, ideal for game dev and VR.
+        </p>
+        <div class="tag-list">
+          <span class="tag">full_body_figure</span>
+          <span class="tag">figurine</span>
+          <span class="tag">humanoid</span>
+          <span class="tag">cyber vintage</span>
+          <span class="tag">Three.js r178</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-heading">Mesh Specifications</div>
+        <div class="specs-grid">
+          <div class="spec-card">
+            <div class="spec-label">Vertices</div>
+            <div class="spec-value" id="spec-vertices">1,017,477</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-label">Faces (Triangles)</div>
+            <div class="spec-value" id="spec-faces">1,999,676</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-label">Voxel Resolution</div>
+            <div class="spec-value">1536³</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-label">Base Texture</div>
+            <div class="spec-value">4096 × 4096 PNG</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-label">Topology</div>
+            <div class="spec-value">Uniform Triangles</div>
+          </div>
+          <div class="spec-card">
+            <div class="spec-label">Hi3D Version</div>
+            <div class="spec-value">v2.1 (General)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-heading">Extracted Local Assets</div>
+        <div class="download-list">
+          <a class="dl-btn primary" href="./assets/avatar-web.glb" download="avatar-web.glb">
+            <span>📦 avatar-web.glb (Web Optimized + Normals)</span>
+            <span class="dl-meta">65.8 MB</span>
+          </a>
+          <a class="dl-btn" href="./assets/avatar.glb" download="avatar-original-hi3d.glb">
+            <span>📦 avatar.glb (Raw Original Mesh)</span>
+            <span class="dl-meta">54.2 MB</span>
+          </a>
+          <a class="dl-btn" href="./assets/textures/baseColor.png" download="baseColor-4k.png">
+            <span>🖼️ textures/baseColor.png (4K UV Texture)</span>
+            <span class="dl-meta">11.9 MB</span>
+          </a>
+          <a class="dl-btn" href="./assets/media/orbit.mp4" download="orbit.mp4">
+            <span>🎬 media/orbit.mp4 (360° Orbit Video)</span>
+            <span class="dl-meta">760 KB</span>
+          </a>
+          <a class="dl-btn" href="./metadata.json" target="_blank">
+            <span>📄 metadata.json (Model Specification JSON)</span>
+            <span class="dl-meta">JSON</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="border-bottom: none;">
+        <div class="section-heading">How to Reuse in Web Applications</div>
+        <div class="code-box">import { createAvatarViewer } from './src/Hi3DAvatarViewer.js';
+
+const viewer = createAvatarViewer(
+  document.getElementById('my-avatar'),
+  {
+    modelUrl: './assets/avatar-web.glb',
+    envBasePath: './assets/env',
+    hdriKey: 'indoor2',
+    envIntensity: 3.0,
+    autoRotate: true,
+    showGrid: false,
+    showAxes: false
+  }
+);</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Reference Media Modal -->
+  <div class="modal-backdrop" id="ref-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>Original Extracted Reference Media</span>
+        <button class="mode-btn" id="btn-close-modal">✕ Close</button>
+      </div>
+      <div class="modal-grid">
+        <div class="modal-item">
+          <img src="./assets/media/reference-source.png" alt="Source 2D" />
+          <div class="modal-caption">2D Input Image (Source)</div>
+        </div>
+        <div class="modal-item">
+          <img src="./assets/media/clay-no-tex.png" alt="Clay Render" />
+          <div class="modal-caption">Untextured Geometry (Clay)</div>
+        </div>
+        <div class="modal-item">
+          <video src="./assets/media/orbit.mp4" controls loop autoplay muted playsinline></video>
+          <div class="modal-caption">Original 360° Orbit Video</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createAvatarViewer } from './src/Hi3DAvatarViewer.js';
+
+    const container = document.getElementById('canvas-container');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const progressFill = document.getElementById('progress-fill');
+    const loadingLabel = document.getElementById('loading-label');
+    const zoomSlider = document.getElementById('slider-zoom');
+    const zoomVal = document.getElementById('val-zoom');
+
+    const viewer = createAvatarViewer(container, {
+      modelUrl: './assets/avatar-web.glb',
+      envBasePath: './assets/env',
+      hdriKey: 'indoor2',
+      envIntensity: 3.0,
+      envRotationY: -60,
+      autoRotate: true,
+      perspective: true,
+      showGrid: true,
+      showAxes: true,
+      usePostProcessing: true,
+      onStage: (stage) => {
+        if (stage === 'environment') {
+          loadingLabel.textContent = 'Loading HDRI lighting (Office_Room_Ten24.hdr)...';
+        } else if (stage === 'downloading') {
+          loadingLabel.textContent = 'Loading local 3D mesh (avatar-web.glb)...';
+        } else if (stage === 'scene') {
+          loadingLabel.textContent = 'Compiling PBR shaders and preparing scene...';
+        }
+      },
+      onProgress: ({ percent }) => {
+        progressFill.style.width = `${percent}%`;
+        loadingLabel.textContent = `Loading local 3D model... ${percent}%`;
+      },
+      onReady: ({ vertices, faces }) => {
+        loadingOverlay.classList.add('done');
+        document.getElementById('spec-vertices').textContent = vertices.toLocaleString('en-US');
+        document.getElementById('spec-faces').textContent = faces.toLocaleString('en-US');
+      },
+      onZoomPercentChange: (pct) => {
+        zoomSlider.value = pct;
+        zoomVal.textContent = `${pct}%`;
+      },
+      onError: (err) => {
+        loadingLabel.textContent = `Error loading model: ${err.message || err}`;
+      }
+    });
+
+    // Render mode buttons
+    const modeButtons = document.querySelectorAll('.mode-btn[data-mode]');
+    modeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modeButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        viewer.setRenderMode(btn.dataset.mode);
+      });
+    });
+
+    // Wireframe toggle
+    const wireBtn = document.getElementById('btn-wireframe');
+    let wireframeOn = false;
+    wireBtn.addEventListener('click', () => {
+      wireframeOn = !wireframeOn;
+      wireBtn.classList.toggle('active', wireframeOn);
+      viewer.setWireframe(wireframeOn);
+    });
+
+    // Environment panel toggle
+    const envPanelBtn = document.getElementById('btn-env-panel');
+    const envPanel = document.getElementById('env-panel');
+    envPanelBtn.addEventListener('click', () => {
+      const hidden = envPanel.classList.toggle('hidden');
+      envPanelBtn.classList.toggle('active', !hidden);
+    });
+
+    // HDRI & PBR controls
+    document.getElementById('select-hdri').addEventListener('change', (e) => {
+      viewer.setEnvironmentPreset(e.target.value);
+    });
+
+    const envIntSlider = document.getElementById('slider-env-int');
+    const envIntVal = document.getElementById('val-env-int');
+    envIntSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      envIntVal.textContent = v.toFixed(2);
+      viewer.setEnvironmentIntensity(v);
+    });
+
+    const envRotSlider = document.getElementById('slider-env-rot');
+    const envRotVal = document.getElementById('val-env-rot');
+    envRotSlider.addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      envRotVal.textContent = `${v}°`;
+      viewer.setEnvironmentRotation(v);
+    });
+
+    const roughStr = document.getElementById('slider-rough-str');
+    const roughCon = document.getElementById('slider-rough-con');
+    const syncRough = () => {
+      const s = Number(roughStr.value);
+      const c = Number(roughCon.value);
+      document.getElementById('val-rough-str').textContent = s.toFixed(2);
+      document.getElementById('val-rough-con').textContent = c.toFixed(2);
+      viewer.setRoughnessParams(s, c);
+    };
+    roughStr.addEventListener('input', syncRough);
+    roughCon.addEventListener('input', syncRough);
+
+    const metalStr = document.getElementById('slider-metal-str');
+    const metalCon = document.getElementById('slider-metal-con');
+    const syncMetal = () => {
+      const s = Number(metalStr.value);
+      const c = Number(metalCon.value);
+      document.getElementById('val-metal-str').textContent = s.toFixed(2);
+      document.getElementById('val-metal-con').textContent = c.toFixed(2);
+      viewer.setMetalnessParams(s, c);
+    };
+    metalStr.addEventListener('input', syncMetal);
+    metalCon.addEventListener('input', syncMetal);
+
+    // Bottom bar controls
+    const gridBtn = document.getElementById('btn-grid');
+    let gridOn = true;
+    gridBtn.addEventListener('click', () => {
+      gridOn = !gridOn;
+      gridBtn.classList.toggle('active', gridOn);
+      viewer.setGridVisible(gridOn);
+    });
+
+    const axesBtn = document.getElementById('btn-axes');
+    let axesOn = true;
+    axesBtn.addEventListener('click', () => {
+      axesOn = !axesOn;
+      axesBtn.classList.toggle('active', axesOn);
+      viewer.setAxesVisible(axesOn);
+    });
+
+    const perspBtn = document.getElementById('btn-persp');
+    const perspLabel = document.getElementById('label-persp');
+    let perspOn = true;
+    perspBtn.addEventListener('click', () => {
+      perspOn = !perspOn;
+      perspBtn.classList.toggle('active', perspOn);
+      perspLabel.textContent = perspOn ? '🎥 Perspective' : '📐 Orthographic';
+      viewer.setPerspective(perspOn);
+    });
+
+    const autoRotBtn = document.getElementById('btn-autorotate');
+    let autoRotOn = true;
+    autoRotBtn.addEventListener('click', () => {
+      autoRotOn = !autoRotOn;
+      autoRotBtn.classList.toggle('active', autoRotOn);
+      viewer.setAutoRotate(autoRotOn);
+    });
+
+    const gtaoBtn = document.getElementById('btn-gtao');
+    let gtaoOn = true;
+    gtaoBtn.addEventListener('click', () => {
+      gtaoOn = !gtaoOn;
+      gtaoBtn.classList.toggle('active', gtaoOn);
+      viewer.setPostProcessing(gtaoOn);
+    });
+
+    zoomSlider.addEventListener('input', (e) => {
+      const pct = Number(e.target.value);
+      zoomVal.textContent = `${pct}%`;
+      viewer.setZoomPercent(pct);
+    });
+
+    document.getElementById('btn-particles').addEventListener('click', () => {
+      viewer.triggerParticles();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      viewer.resetCamera();
+    });
+
+    document.getElementById('btn-screenshot').addEventListener('click', () => {
+      viewer.takeScreenshot('leticia-cyber-vintage-3d.png');
+    });
+
+    const sidebarBtn = document.getElementById('btn-toggle-sidebar');
+    const sidebar = document.getElementById('info-sidebar');
+    sidebarBtn.addEventListener('click', () => {
+      const collapsed = sidebar.classList.toggle('collapsed');
+      sidebarBtn.classList.toggle('active', !collapsed);
+      setTimeout(() => viewer.resize(), 260);
+    });
+
+    // Modal
+    const refModal = document.getElementById('ref-modal');
+    document.getElementById('btn-open-modal').addEventListener('click', () => {
+      refModal.classList.add('open');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      refModal.classList.remove('open');
+    });
+    refModal.addEventListener('click', (e) => {
+      if (e.target === refModal) refModal.classList.remove('open');
+    });
+  </script>
+</body>
+</html>

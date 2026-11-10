@@ -1,0 +1,16 @@
+{
+  "name": "hi3d-avatar-viewer-local",
+  "version": "1.0.0",
+  "description": "Local reusable Three.js r178 3D Avatar Viewer & assets reverse-engineered from Hi3D (Stylized Vintage Cyber Young Girl 3D Character)",
+  "type": "module",
+  "main": "./src/Hi3DAvatarViewer.js",
+  "exports": {
+    ".": "./src/Hi3DAvatarViewer.js",
+    "./materials": "./src/Hi3DMaterials.js",
+    "./camera": "./src/Hi3DCameraAndGizmo.js"
+  },
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "serve": "npx serve -l 8080 ."
+  }
+}

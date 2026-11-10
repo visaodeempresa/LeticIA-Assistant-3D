@@ -1,0 +1,52 @@
+{
+  "sharedUser": {
+    "nickname": "Maycon Willian",
+    "avatar": "./assets/media/cover.webp"
+  },
+  "sharedModel": {
+    "target": "model3d",
+    "url": "./assets/media/cover.webp",
+    "originUrl": "./assets/media/cover.png",
+    "multiViewInfo": {
+      "multiViewSourceImageList": [
+        {
+          "sourceImageUrl": "./assets/media/reference-source.png",
+          "sourceOriginImageUrl": "./assets/media/reference-source.png"
+        }
+      ]
+    },
+    "modelRefImageNoTexUrl": "./assets/media/clay-no-tex.png",
+    "model3DGlbUrl": "./assets/avatar-web.glb",
+    "rawModel3DGlbUrl": "./assets/avatar.glb",
+    "numFaces": 1999676,
+    "numVertices": 1017477,
+    "whetherTex": 1,
+    "scene": "general",
+    "voxelResolution": "1536",
+    "version": "v2.1",
+    "createTime": "2026-08-14 02:52:19",
+    "taskType": "general",
+    "topologyMethod": "uniform",
+    "faceType": "triangles",
+    "rmbg": 1,
+    "useGrayGeo": 1,
+    "seoMetadataDto": {
+      "title": "Stylized Vintage Cyber Young Girl 3D Character",
+      "description": "Detailed 3D young fantasy girl with cyber-embroidered coat, realistic textures, ideal for game dev and VR",
+      "tags": "young girl character, stylized 3d, cyber vintage, game asset, vr development",
+      "urlSlug": "Stylized Vintage Cyber Young Girl 3D Character"
+    },
+    "tag": {
+      "tag1": "full_body_figure",
+      "maintag": "figurine",
+      "tag4": "humanoid",
+      "tag2": "clothing",
+      "tag3": "footwear"
+    },
+    "modelType": "fast"
+  },
+  "downloadable": true,
+  "shareImageUrl": "./assets/media/cover.webp",
+  "shareImageOriginalUrl": "./assets/media/share-card.png",
+  "shareVideoUrl": "./assets/media/orbit.mp4"
+}

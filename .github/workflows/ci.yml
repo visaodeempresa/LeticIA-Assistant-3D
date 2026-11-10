@@ -1,0 +1,72 @@
+name: CI Verification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-project:
+    name: Validate Scripts, JSONs, Notebook & 3D Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Shell Scripts Syntax
+        run: |
+          for script in scripts/*.sh; do
+            if [ -f "$script" ]; then
+              bash -n "$script"
+              echo "Syntax OK: $script"
+            fi
+          done
+
+      - name: Validate JSON Files & Main Jupyter Notebook
+        run: |
+          python3 -m json.tool version.json >/dev/null
+          python3 -m json.tool reverse/package.json >/dev/null
+          python3 -m json.tool reverse/metadata.json >/dev/null
+          python3 -m json.tool notebooks/avatar_leticia_3d_generation.ipynb >/dev/null
+          python3 - <<'PY'
+          import ast, json
+          from pathlib import Path
+          nb = json.loads(Path("notebooks/avatar_leticia_3d_generation.ipynb").read_text(encoding="utf-8"))
+          for idx, cell in enumerate(nb.get("cells", [])):
+              if cell.get("cell_type") == "code":
+                  src = "".join(cell.get("source", []))
+                  clean = "\n".join(l for l in src.splitlines() if not l.lstrip().startswith(("%", "!")))
+                  ast.parse(clean, filename=f"cell-{idx}")
+          print("All notebook code cells passed Python AST validation.")
+          PY
+
+      - name: Verify Standalone 3D Viewer & Web GLB Asset
+        run: |
+          test -f reverse/index.html
+          test -f reverse/src/Hi3DAvatarViewer.js
+          test -f reverse/src/Hi3DMaterials.js
+          test -f reverse/src/Hi3DCameraAndGizmo.js
+          test -f reverse/assets/avatar-web.glb
+          echo "3D Viewer and Web GLB verified."
+
+      - name: Verify Sanitization & Security Policy
+        run: |
+          test -f .env.example
+          ! test -f .env
+          ! test -f CLAUDE.md
+          ! test -f GEMINI.md
+          ! test -f AGENTS.md
+          ! test -d .agents
+          ! test -d .cursor
+          if grep -E -q "ghp_[A-Za-z0-9]{20,}|hf_[A-Za-z0-9]{20,}" .env.example; then
+            echo "ERROR: Secret token pattern detected in .env.example!"
+            exit 1
+          fi
+          echo "Repository sanitization check passed."
