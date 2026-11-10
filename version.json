@@ -1,7 +1,7 @@
 {
   "name": "LeticIA-Assistant-3D",
   "displayName": "LetícIA-Assistant-3D",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standalone Three.js r178 3D Avatar Studio, Custom PBR Shaders, and Multi-View 3D Reconstruction Pipeline",
   "author": "Maycon Willian Oliveira",
   "license": "MIT",
